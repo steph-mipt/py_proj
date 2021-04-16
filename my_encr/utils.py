@@ -1,6 +1,6 @@
 """
     File created by steph
-    Last update: 31.03.2021
+    Last update: 16.04.2021
 """
 
 
@@ -14,13 +14,12 @@ def shift_letter(letter, offset: int):
     return letter
 
 
-def encode(in_data, out_data, offset: int):
+def count_letters(in_data):
+    lower_alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    upper_alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    count = [0] * len(lower_alphabet)
     for line in in_data:
-        out_line = ''
-        for symb in line:
-            out_line += shift_letter(symb, offset)
-        out_data.write(out_line + "\n")
-
-
-def decode(in_data, out_data, offset: int):
-    encode(in_data, out_data, -offset)
+        for letter in line:
+            if letter in lower_alphabet or letter in upper_alphabet:
+                count[ord(letter.lower()) - ord(lower_alphabet[0])] += 1
+    return count
