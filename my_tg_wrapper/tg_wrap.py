@@ -1,18 +1,19 @@
 """
     File created by steph
-    Last update: 31.03.2021
+    Last update: 21.04.2021
 """
 
 import my_tg_wrapper.tg_const as tg_const
 import telebot
 from my_encr import caesar, vernam, vigenere
 import os
+from my_tg_wrapper.hidden import TOKEN
 
 encr_bot = telebot.TeleBot(TOKEN)
 
 caesar_shift_default = 14
-vernam_key_default = 'b'
-vigenere_key_default = 'c'
+vernam_key_default = 'a'
+vigenere_key_default = 'a'
 
 
 @encr_bot.message_handler(commands=['start'])
@@ -46,8 +47,8 @@ def send_welcome(message):
 def caesar_menu(call):
     menu_keyboard = telebot.types.InlineKeyboardMarkup()
     menu_keyboard.row_width = 2
-    decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="caesar_decode")
-    encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="caesar_encode")
+    decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="caesar_encode")
+    encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="caesar_decode")
     menu_keyboard.add(decode_button, encode_button)
     encr_bot.send_message(call.message.chat.id, tg_const.MSG_CHOICE, reply_markup=menu_keyboard)
 
@@ -70,15 +71,10 @@ def caesar_get_data_decode(message):
 
 def caesar_finish_decode(message):
     global caesar_shift_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        caesar.decode(message.text.split("\n"), output_file, caesar_shift_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
+        out = caesar.decode(message.text.split("\n"), caesar_shift_default)
         encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
+        encr_bot.send_message(message.chat.id, out)
 
         return
     elif message.content_type == "document":
@@ -104,16 +100,10 @@ def caesar_get_data_encode(message):
 
 def caesar_finish_encode(message):
     global caesar_shift_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        print(output_file)
-        caesar.encode(message.text.split("\n"), output_file, caesar_shift_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
+        out = caesar.encode(message.text.split("\n"), caesar_shift_default)
         encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
+        encr_bot.send_message(message.chat.id, out)
 
         return
     elif message.content_type == "document":
@@ -130,8 +120,8 @@ def caesar_finish_encode(message):
 def vernam_menu(call):
     menu_keyboard = telebot.types.InlineKeyboardMarkup()
     menu_keyboard.row_width = 2
-    decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="vernam_decode")
-    encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="vernam_encode")
+    decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="vernam_encode")
+    encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="vernam_decode")
     menu_keyboard.add(decode_button, encode_button)
     encr_bot.send_message(call.message.chat.id, tg_const.MSG_CHOICE, reply_markup=menu_keyboard)
 
@@ -141,10 +131,8 @@ def vernam_menu(call):
 
 @encr_bot.callback_query_handler(func=lambda call: call.data == "vernam_decode")
 def vernam_decode(call):
-    raise InterruptedError
-
-    # msg = encr_bot.send_message(call.message.chat.id, tg_const.MSG_VR_KEY)
-    # encr_bot.register_next_step_handler(msg, vernam_get_data_decode)
+    msg = encr_bot.send_message(call.message.chat.id, tg_const.MSG_VR_KEY)
+    encr_bot.register_next_step_handler(msg, vernam_get_data_decode)
 
 
 def vernam_get_data_decode(message):
@@ -156,20 +144,27 @@ def vernam_get_data_decode(message):
 
 def vernam_finish_decode(message):
     global vernam_key_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        vernam.decode(message.text.split("\n"), output_file, vernam_key_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
-        encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
-
-        return
-    elif message.content_type == "document":
-
         raise InterruptedError
+    elif message.content_type == "document":
+        file = encr_bot.get_file(message.document.file_id)
+        downloaded_file = encr_bot.download_file(file.file_path)
+
+        print(downloaded_file)
+
+        raise NotImplementedError
+
+        # if len(message.text) != len(vernam_key_default):
+        #     msg = encr_bot.send_message(message.chat.id, tg_const.MSG_LEN_NOT_EQ)
+        #     encr_bot.register_next_step_handler(msg, vernam_finish_decode)
+        #     return
+        #
+        # out = vernam.decode(message.text.split("\n"), vernam_key_default)
+        # print(out)
+        # encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
+        # encr_bot.send_message(message.chat.id, out)
+        #
+        # return
 
 
 """ Vernam encode """
@@ -190,15 +185,22 @@ def vernam_get_data_encode(message):
 
 def vernam_finish_encode(message):
     global vernam_key_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        vernam.encode(message.text.split("\n"), output_file, vernam_key_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
+        if len(message.text) != len(vernam_key_default):
+            msg = encr_bot.send_message(message.chat.id, tg_const.MSG_LEN_NOT_EQ)
+            encr_bot.register_next_step_handler(msg, vernam_finish_encode)
+            return
+
+        out = vernam.encode(message.text.split("\n"), vernam_key_default)
+        f = open("tmp.tmp", "wb")
+        f.write(out)
+        f.close()
+        f = open("tmp.tmp", "rb")
+
         encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
+        encr_bot.send_document(message.chat.id, f)
+        f.close()
+        os.remove("tmp.tmp")
 
         return
     elif message.content_type == "document":
@@ -213,14 +215,12 @@ def vernam_finish_encode(message):
 
 @encr_bot.callback_query_handler(func=lambda call: call.data == "vigenere")
 def vigenere_menu(call):
-    raise InterruptedError
-
-    # menu_keyboard = telebot.types.InlineKeyboardMarkup()
-    # menu_keyboard.row_width = 2
-    # decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="vigenere_decode")
-    # encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="vigenere_encode")
-    # menu_keyboard.add(decode_button, encode_button)
-    # encr_bot.send_message(call.message.chat.id, tg_const.MSG_CHOICE, reply_markup=menu_keyboard)
+    menu_keyboard = telebot.types.InlineKeyboardMarkup()
+    menu_keyboard.row_width = 2
+    decode_button = telebot.types.InlineKeyboardButton(text="Зашифровать", callback_data="vigenere_encode")
+    encode_button = telebot.types.InlineKeyboardButton(text="Расшифровать", callback_data="vigenere_decode")
+    menu_keyboard.add(decode_button, encode_button)
+    encr_bot.send_message(call.message.chat.id, tg_const.MSG_CHOICE, reply_markup=menu_keyboard)
 
 
 """ Vigenere decode """
@@ -241,15 +241,15 @@ def vigenere_get_data_decode(message):
 
 def vigenere_finish_decode(message):
     global vigenere_key_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        vigenere.decode(message.text.split("\n"), output_file, vigenere_key_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
+        if len(message.text) != len(vigenere_key_default):
+            msg = encr_bot.send_message(message.chat.id, tg_const.MSG_LEN_NOT_EQ)
+            encr_bot.register_next_step_handler(msg, vernam_finish_decode)
+            return
+
+        out = vigenere.decode(message.text.split("\n"), vigenere_key_default)
         encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
+        encr_bot.send_message(message.chat.id, out)
 
         return
     elif message.content_type == "document":
@@ -257,7 +257,7 @@ def vigenere_finish_decode(message):
         raise InterruptedError
 
 
-""" Vernam encode """
+""" Vigenere encode """
 
 
 @encr_bot.callback_query_handler(func=lambda call: call.data == "vigenere_encode")
@@ -267,23 +267,23 @@ def vigenere_encode(call):
 
 
 def vigenere_get_data_encode(message):
-    global vernam_key_default
-    vernam_key_default = message.text
+    global vigenere_key_default
+    vigenere_key_default = message.text
     msg = encr_bot.send_message(message.chat.id, tg_const.MSG_INVITE)
     encr_bot.register_next_step_handler(msg, vigenere_finish_encode)
 
 
 def vigenere_finish_encode(message):
     global vigenere_key_default
-    os.remove("tmp.tmp")
     if message.content_type == "text":
-        output_file = open("tmp.tmp", "w")
-        vigenere.encode(message.text.split("\n"), output_file, vigenere_key_default)
-        output_file.close()
-        output_file = open("tmp.tmp", "rb")
+        if len(message.text) != len(vigenere_key_default):
+            msg = encr_bot.send_message(message.chat.id, tg_const.MSG_LEN_NOT_EQ)
+            encr_bot.register_next_step_handler(msg, vernam_finish_decode)
+            return
+
+        out = vigenere.encode(message.text.split("\n"), vigenere_key_default)
         encr_bot.send_message(message.chat.id, tg_const.MSG_CS_FINISH)
-        encr_bot.send_document(message.chat.id, output_file)
-        output_file.close()
+        encr_bot.send_message(message.chat.id, str(out))
 
         return
     elif message.content_type == "document":

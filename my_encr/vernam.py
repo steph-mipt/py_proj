@@ -1,4 +1,10 @@
-def encode(in_data, out_data, key: str):
+"""
+    File created by steph
+    Last update: 21.04.2021
+"""
+
+
+def encode(in_data, key: str):
     inp = ''
     for line in in_data:
         inp += line
@@ -10,13 +16,13 @@ def encode(in_data, out_data, key: str):
         symb = bytes([code])
         out += symb
         key_pos = (key_pos + 1) % key_len
-    out_data.write(out)
+    return out
 
 
-def decode(in_data, out_data, key: str):
+def decode(in_data, key: str):
     inp = b''
     for line in in_data:
-        inp += line
+        inp += str.encode(line)
     out = ''
     key_pos = 0
     key_len = len(key)
@@ -25,4 +31,4 @@ def decode(in_data, out_data, key: str):
         symb = chr(code)
         out += symb
         key_pos = (key_pos + 1) % key_len
-    out_data.write(out)
+    return out

@@ -1,9 +1,8 @@
 """
     File created by steph
-    Last update: 31.03.2021
+    Last update: 21.04.2021
 """
 
-import sys
 from my_tg_wrapper.tg_wrap import encr_bot
 
 
